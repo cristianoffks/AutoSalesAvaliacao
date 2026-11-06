@@ -1,0 +1,76 @@
+<main>
+  <h1>{{ title }}</h1>
+  <app-error-dialog [message]="error" (closed)="error = ''" />
+  <app-error-dialog title="Sucesso" [message]="saved ? successMessage : ''" (closed)="saved = false" />
+
+  @if (loadingVehicle) {
+    <p role="status">Carregando veículo…</p>
+  } @else if (!loadError) {
+
+    <section aria-labelledby="owner-title">
+      <h2 id="owner-title">Proprietário</h2>
+      @if (editingId !== null) {
+        <p>
+          <strong>CPF:</strong> {{ ownerCpf }}
+        </p>
+      } @else {
+        <form (ngSubmit)="searchOwner()">
+          <label>
+            CPF do proprietário
+            <input type="text" name="ownerCpf" [(ngModel)]="ownerCpf"
+              (ngModelChange)="clearOwner(); clearFieldError('personid')"
+              [attr.aria-invalid]="isInvalid('personid', personId === null) || !!ownerMessage"
+              [readOnly]="loadingOwner || saving" inputmode="numeric" maxlength="14"
+              placeholder="Com ou sem máscara">
+          </label>
+          <button type="submit" [disabled]="loadingOwner || saving">
+            {{ loadingOwner ? 'Buscando…' : 'Buscar proprietário' }}
+          </button>
+        </form>
+      }
+
+      @if (owner; as person) {
+        <p><strong>Nome:</strong> {{ person.fullName }}</p>
+        <p><strong>Data de nascimento:</strong> {{ person.birthDate }}</p>
+        <p><strong>E-mail:</strong> {{ person.email }}</p>
+        <p><strong>Telefone:</strong> {{ person.phone }}</p>
+      }
+    </section>
+
+    <section aria-labelledby="vehicle-title">
+      <h2 id="vehicle-title">Dados do veículo</h2>
+      <form id="vehicle-form" #vehicleForm="ngForm" (ngSubmit)="save(vehicleForm.valid === true)">
+          <label>
+            Placa
+            <input name="plate" [(ngModel)]="plate" #plateField="ngModel" required maxlength="7"
+              (ngModelChange)="clearFieldError('plate')"
+              [attr.aria-invalid]="isInvalid('plate', !!plateField.invalid)">
+          </label>
+          <label>
+            Ano de fabricação
+            <input #yearField="ngModel" type="text" name="manufactureYear" [ngModel]="manufactureYear"
+              inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required
+              (ngModelChange)="updateManufactureYear($event, yearField)"
+              [attr.aria-invalid]="isInvalid('manufactureyear', !validManufactureYear)">
+          </label>
+          <label>
+            Marca
+            <input name="brand" [(ngModel)]="brand" #brandField="ngModel" maxlength="80" required
+              (ngModelChange)="clearFieldError('brand')" [attr.aria-invalid]="isInvalid('brand', !!brandField.invalid)">
+          </label>
+          <label>
+            Modelo
+            <input name="model" [(ngModel)]="model" #modelField="ngModel" maxlength="100" required
+              (ngModelChange)="clearFieldError('model')" [attr.aria-invalid]="isInvalid('model', !!modelField.invalid)">
+          </label>
+      </form>
+    </section>
+
+    <p class="vehicle-actions">
+      <button type="submit" form="vehicle-form"
+        [disabled]="!canSave(vehicleForm.valid === true)">
+        {{ saveLabel }}
+      </button>
+    </p>
+  }
+</main>

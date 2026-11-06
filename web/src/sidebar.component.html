@@ -1,0 +1,15 @@
+<nav aria-label="Menu principal">
+  <strong>AutoSales</strong>
+  <details open>
+    <summary>Pessoa</summary>
+    <a routerLink="/people/new" routerLinkActive="active" ariaCurrentWhenActive="page">Cadastrar Pessoa</a>
+    <a routerLink="/people" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+      ariaCurrentWhenActive="page">Gerenciar pessoas</a>
+  </details>
+  <details open>
+    <summary>Veículos</summary>
+    <a routerLink="/vehicles/new" routerLinkActive="active" ariaCurrentWhenActive="page">Cadastrar Veículo</a>
+    <a routerLink="/vehicles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+      ariaCurrentWhenActive="page">Gerenciar veículos</a>
+  </details>
+</nav>

@@ -1,0 +1,55 @@
+<main>
+  <header>
+    <span>AutoSales</span>
+    <h1>{{ editingId === null ? 'Cadastrar pessoa' : 'Editar pessoa' }}</h1>
+  </header>
+
+  <app-error-dialog [message]="error" (closed)="error = ''" />
+  <app-error-dialog title="Sucesso" [message]="success" (closed)="success = ''" />
+
+  @if (form; as person) {
+    <section>
+      <form #personForm="ngForm" (ngSubmit)="personForm.valid && save(birthDateInput.validity.valid, personForm)">
+        <label>
+          Nome completo
+          <input name="fullName" [(ngModel)]="person.fullName" required maxlength="150"
+            [attr.aria-invalid]="invalidFields.includes('fullname')" (ngModelChange)="clearFieldError('fullname')">
+        </label>
+        <label>
+          CPF
+          <input #cpfField="ngModel" name="personCpf" [ngModel]="person.cpf" [readOnly]="editingId !== null"
+            required inputmode="numeric" maxlength="14" pattern="([0-9]{11}|[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})"
+            placeholder="000.000.000-00"
+            [attr.aria-invalid]="invalidFields.includes('cpf')" (ngModelChange)="updateCpf($event, cpfField)">
+        </label>
+        <label>
+          Data de nascimento
+          <input #birthDateInput type="date" name="birthDate" [(ngModel)]="person.birthDate"
+            min="0001-01-01" [max]="today" required
+            [attr.aria-invalid]="birthDateInvalid(birthDateInput)"
+            (ngModelChange)="clearFieldError('birthdate')">
+        </label>
+        <label>
+          E-mail
+          <input type="email" name="email" [(ngModel)]="person.email" required email maxlength="254"
+            [attr.aria-invalid]="invalidFields.includes('email')" (ngModelChange)="clearFieldError('email')">
+        </label>
+        <label>
+          Telefone
+          <input #phoneField="ngModel" type="tel" name="phone" [ngModel]="person.phone"
+            (ngModelChange)="updatePhone($event, phoneField)"
+            [attr.aria-invalid]="invalidFields.includes('phone')"
+            placeholder="(11) 99999-9999" required>
+        </label>
+        <button type="submit" [disabled]="personForm.invalid || saving">
+          {{ saving ? 'Salvando…' : 'Salvar' }}
+        </button>
+        <button type="button" [disabled]="saving" (click)="back()">Cancelar</button>
+      </form>
+    </section>
+  } @else if (loadFailed) {
+    <a routerLink="/people">Voltar para gerenciamento</a>
+  } @else {
+    <p role="status">Carregando pessoa…</p>
+  }
+</main>
