@@ -1,12 +1,31 @@
-# AutoSales
+# AutoSales Avaliação
 
-API REST para cadastro de pessoas e veículos, com C#, ASP.NET Core 10, Entity Framework Core, SQL Server 2022 e Swagger.
+Cadastro de pessoas e veículos com API em .NET 10, SQL Server e interface em Angular 22.
 
-## Execução local
+## Pré-requisitos
 
-Pré-requisitos: SDK do .NET 10, Docker Desktop com contêineres Linux e, para abrir a solução no ambiente de desenvolvimento, Visual Studio 2026 com a carga de trabalho ASP.NET e desenvolvimento Web.
+- SDK do .NET 10.
+- SQL Server ou Docker Desktop com contêineres Linux.
+- Node.js compatível com Angular 22 e npm.
+- Visual Studio 2026, caso prefira executar pela IDE.
 
-Na raiz da solução, rode no PowerShell:
+## Configuração do banco
+
+O arquivo `AutoSales.Api/appsettings.Local.json` contém uma configuração simplificada de exemplo. Substitua servidor, usuário e senha pelos dados do seu ambiente:
+
+```json
+{
+  "ConnectionStrings": {
+    "Registry": "Server=SEU_SERVIDOR;Database=AutoSales;User Id=SEU_USUARIO;Password=SUA_SENHA;TrustServerCertificate=True"
+  }
+}
+```
+
+Esse arquivo é usado na execução em Debug e está ignorado pelo Git. Se não estiver presente após clonar, crie-o com a estrutura acima.
+
+### SQL Server no Docker
+
+Se já possui um SQL Server, pode pular esta etapa. Na raiz da solução, execute no PowerShell:
 
 ```powershell
 if (!(Test-Path -LiteralPath .env)) {
@@ -14,34 +33,41 @@ if (!(Test-Path -LiteralPath .env)) {
     Set-Content -LiteralPath .env -Value "MSSQL_SA_PASSWORD=$registryPassword"
 }
 $registryPassword = (Get-Content -LiteralPath .env -Raw).Trim() -replace '^MSSQL_SA_PASSWORD=', ''
+
 docker compose up -d --wait
+
 dotnet user-secrets set "ConnectionStrings:Registry" "Server=127.0.0.1,14333;Database=AutoSales;User Id=sa;Password=$registryPassword;TrustServerCertificate=True" --project AutoSales.Api
+```
+
+A instância usa a porta `14333`. Mantenha o `.env`, pois ele contém a senha usada pelo banco. A conexão configurada pelos segredos de usuário tem preferência sobre o arquivo local em desenvolvimento.
+
+### Criação do banco
+
+O script está em [database/CreateSchema.sql](database/CreateSchema.sql). Abra no SQL Server Management Studio e execute o arquivo completo na instância configurada para a API. Ele cria o banco `AutoSales` e suas tabelas.
+
+Se preferir usar a migração, execute na raiz da solução:
+
+```powershell
 dotnet tool restore
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 dotnet ef database update --project AutoSales.Infrastructure --startup-project AutoSales.Api
 ```
 
-O SQL Server usa a porta local `14333` e guarda os dados em um volume do Docker. Mantenha o mesmo `.env` enquanto usar esse volume. A API lê a conexão dos segredos de usuário em desenvolvimento.
+Escolha o script ou a migração. Esta versão utiliza uma migração inicial consolidada e deve ser aplicada em um banco novo.
 
-O comando aplica a migração única `20261106130000_InitialCreate`, que cria diretamente as tabelas `People` e `Vehicles`, com marca e modelo no veículo. Esta versão consolidada é destinada a um banco novo; bancos com o histórico antigo não devem receber a migração inicial novamente.
+## Execução da API
 
-Abra `AutoSales.sln`, selecione `AutoSales.Api` como projeto de inicialização e execute com F5. Para iniciar pelo terminal, rode `dotnet run --project AutoSales.Api`. A interface fica em [http://localhost:5080/swagger](http://localhost:5080/swagger).
+Abra `AutoSales.sln`, selecione `AutoSales.Api` como projeto de inicialização e execute com F5. Pelo terminal:
 
-## Criação do banco por script SQL
+```powershell
+dotnet run --project AutoSales.Api --launch-profile AutoSales.Api
+```
 
-Como alternativa ao `dotnet ef database update`, abra `database/CreateSchema.sql` no SQL Server Management Studio, conecte-se ao SQL Server e execute o arquivo completo. No Docker local, o servidor é `127.0.0.1,14333`, com usuário `sa` e a senha configurada no `.env`.
-
-O script cria o banco `AutoSales` diretamente na estrutura atual, com as tabelas de pessoas (`People`) e veículos (`Vehicles`), índices e chave estrangeira do proprietário. Marca e modelo são campos de texto do veículo. O histórico equivalente das migrações fica registrado em `__EFMigrationsHistory`. Pode ser executado novamente na estrutura atual sem apagar os registros.
-
-O único script SQL é `database/CreateSchema.sql`. Ele não atualiza bancos com a estrutura ou o histórico antigo e interrompe a execução nesses casos, sem apagar os dados.
-
-Escolha o script SQL ou a migração para criar o banco. A conexão da API continua sendo configurada conforme a seção de execução local.
-
-Cada veículo exige uma pessoa existente por meio de `Vehicles.PersonId`, que é obrigatório e referencia `People.Id`. Uma pessoa pode ter vários veículos. Ao excluir uma pessoa pela API, seus veículos são excluídos na mesma transação; se qualquer etapa falhar, toda a operação é desfeita. A interface pede confirmação e avisa sobre a exclusão dos veículos antes de enviar a requisição.
+Swagger: [http://localhost:5080/swagger](http://localhost:5080/swagger).
 
 ## Interface Angular
 
-Com a API na porta `5080`, abra outro terminal e execute:
+Com a API em execução na porta `5080`, abra outro terminal:
 
 ```powershell
 cd web
@@ -49,55 +75,20 @@ npm.cmd ci
 npm.cmd start
 ```
 
-Abra [http://localhost:4200](http://localhost:4200). A primeira tela permite pesquisar pessoas por nome e CPF. Informe um filtro e clique em Buscar para carregar os resultados. O componente usa `ngModel` para ler os filtros. O serviço chama `GET /api/people` pelo intermediário de requisições configurado para desenvolvimento.
+Acesse [http://localhost:4200](http://localhost:4200). O menu dá acesso aos cadastros e às pesquisas de pessoas e veículos.
 
-Para preparar a interface para envio por arquivo ZIP, pare a execução com Ctrl+C e, dentro da pasta `web`, execute:
+Para gerar a compilação, execute `npm.cmd run build`. Antes de enviar o projeto em ZIP, pare o Angular com Ctrl+C e, dentro de `web`, execute:
 
 ```powershell
 npm.cmd run clean
 ```
 
-Esse comando remove as dependências baixadas, o cache e os arquivos de compilação. Para executar a interface novamente, use `npm.cmd ci` e `npm.cmd start`.
+Isso remove as dependências, o cache e a compilação. Para rodar novamente, execute `npm.cmd ci` e `npm.cmd start`.
 
-## API
+## Testes
 
-`/api/people` e `/api/vehicles` aceitam GET para listar e POST para criar. Acrescente `/{id}` para consultar (GET), atualizar (PUT) ou excluir (DELETE). O campo `personId` vincula o veículo a uma pessoa existente na criação. A atualização permite alterar apenas os dados do veículo, mantendo o proprietário. A exclusão de pessoa pela API remove seus veículos antes de remover a pessoa, na mesma transação.
-
-Nas listagens, use `GET /api/people?name=Ana` ou `GET /api/people?cpf=123.456.789-09` para buscar pessoas. Para veículos, use `GET /api/vehicles?search=Honda%20Civ` ou `GET /api/vehicles?plate=ABC-1D23`. Nome, marca e modelo aceitam trechos. O filtro `search` pesquisa a marca e o modelo juntos. CPF e placa usam correspondência exata e aceitam valores com ou sem máscara. Quando ambos os filtros da mesma listagem são informados, o resultado precisa atender aos dois.
-
-Marca e modelo são informados manualmente e gravados diretamente no veículo, sem cadastros ou tabelas separados.
-
-Sem filtros, `GET /api/people` e `GET /api/vehicles` retornam todos os registros. Quando não há registros, retornam uma lista vazia com HTTP 200.
-
-## Arquitetura
-
-- `AutoSales.Api` contém os controladores e o componente de tratamento de erros (`middleware`). Os controladores recebem `ISender` por injeção de dependência e enviam as operações pelo MediatR com `Send`.
-- `AutoSales.Application` contém um responsável (`handler`) para cada operação: listar, consultar, cadastrar, atualizar e excluir pessoas e veículos. Os arquivos ficam separados nas pastas `Handlers/People` e `Handlers/Vehicles`. Cada classe implementa `IRequestHandler` e expõe o método `Handle`. Os modelos de entrada, comandos e consultas ficam em `Requests`, e as regras do FluentValidation em `Validators`. Essa camada valida as entradas e executa as operações por meio das interfaces de repositório.
-- `AutoSales.Application` também reúne as entidades em `Entities`, as interfaces dos repositórios em `Repositories` e as exceções em `Exceptions`.
-- `AutoSales.Infrastructure` implementa os repositórios com EF Core e mantém o mapeamento e as migrações do SQL Server.
-
-Os índices únicos no banco garantem a unicidade mesmo quando duas requisições tentam gravar ao mesmo tempo. A camada de aplicação padroniza CPF e placa antes da gravação. Erros de validação, registros ausentes e conflitos retornam respostas estruturadas no formato Problem Details, com mensagens em português.
-
-O fluxo de uma operação é: controlador → MediatR → handler → repositório → banco. Comandos (`Command`) representam cadastro, atualização ou exclusão; consultas (`Query`) representam leitura. Por exemplo, o controlador envia `GetPersonRequest` e o MediatR executa `GetPersonHandler`. As validações continuam explícitas dentro dos handlers. O registro no `Program.cs` procura os handlers no projeto Application automaticamente.
-
-No cadastro e na atualização, a própria entrada (`CreatePersonRequest`, `UpdatePersonRequest`, `CreateVehicleRequest` ou `UpdateVehicleRequest`) implementa `IRequest` e é enviada diretamente com `_mediator.Send(request, cancellationToken)`. Não há um comando adicional envolvendo esses dados. Na atualização, o controlador atribui o ID recebido na rota antes do envio; a propriedade `Id` é ignorada no corpo JSON. Na exclusão, `DeletePersonRequest` e `DeleteVehicleRequest` recebem o identificador diretamente da rota com `[FromRoute]` e também são enviadas ao MediatR sem criar outro objeto no controlador. As consultas por ID também recebem `GetPersonRequest` ou `GetVehicleRequest` com `[FromRoute]` e enviam a request diretamente ao MediatR. As listagens usam mensagens próprias para carregar os filtros.
-
-Quando uma pessoa, um veículo ou o proprietário informado não existe, o handler registra um aviso e retorna `Result<T>` com `ErrorType.NotFound`. O controlador responde HTTP 404 sem lançar exceção. As listagens sem resultados retornam uma lista vazia com HTTP 200.
-
-Antes de cadastrar uma pessoa ou salvar um veículo, o handler consulta a existência do CPF ou da placa. Uma duplicidade encontrada nessa consulta é retornada como `Result<T>`, sem lançar exceção. O controlador transforma a falha em HTTP 409 e mantém a mensagem e o campo no formato lido pela interface. Os índices únicos continuam protegendo contra requisições simultâneas. Se houver conflito entre a consulta e a gravação, o banco bloqueia a operação e a falha segue para o tratamento geral de erros de salvamento, sem classificação por códigos do SQL Server. As exceções de validação e falhas inesperadas seguem para o middleware; registros não encontrados são tratados pelo resultado do handler.
-
-O projeto utiliza MediatR 12.5.0. A referência da biblioteca está disponível em [MediatR no NuGet](https://www.nuget.org/packages/MediatR/12.5.0).
-
-O Serilog está configurado na API para registrar avisos e erros no console. Cada handler recebe `ILogger` por um construtor tradicional e usa `LogError` no bloco `catch`, preservando a exceção com `throw`. Para registrar um aviso em uma operação, pode-se usar `LogWarning` na própria classe. Sucessos e falhas retornadas como `Result<T>` não geram logs automaticamente. O middleware monta a resposta HTTP sem registrar novamente a mesma exceção. Os dados completos das requisições não são incluídos no log.
-
-## Testes unitários
-
-O projeto `AutoSales.Application.Tests` usa xUnit e Moq para testar os handlers sem acessar o banco. Pode ser executado pelo Gerenciador de Testes do Visual Studio ou pelo terminal:
+Pelo Gerenciador de Testes do Visual Studio ou, na raiz da solução:
 
 ```powershell
 dotnet test AutoSales.Application.Tests/AutoSales.Application.Tests.csproj
 ```
-
-## Melhorias futuras
-
-Adicionar paginação às listagens, autenticação e testes de integração automatizados.
