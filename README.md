@@ -2,6 +2,10 @@
 
 Cadastro de pessoas e veículos com API em .NET 10, SQL Server e interface em Angular 22.
 
+## Tecnologias utilizadas
+
+C#, ASP.NET Core 10, Entity Framework Core, SQL Server 2022, Angular 22, MediatR, FluentValidation, Serilog e Swagger. Os testes usam xUnit e Moq. O Docker é opcional para executar o banco localmente.
+
 ## Pré-requisitos
 
 - SDK do .NET 10.
@@ -92,3 +96,14 @@ Pelo Gerenciador de Testes do Visual Studio ou, na raiz da solução:
 ```powershell
 dotnet test AutoSales.Application.Tests/AutoSales.Application.Tests.csproj
 ```
+
+## Decisões arquiteturais
+
+- API, aplicação e infraestrutura em projetos separados para organizar as responsabilidades. A interface Angular fica na pasta `web`.
+- Um handler por operação, chamado pelo controller através do MediatR. Os repositórios concentram o acesso ao banco com Entity Framework Core.
+- FluentValidation para validar as entradas. Falhas esperadas retornam `Result`, e exceções são tratadas pelo middleware. Os handlers registram avisos e erros com Serilog.
+- Cada veículo pertence a uma pessoa. Marca e modelo ficam no próprio veículo, como campos de texto. CPF e placa têm índices únicos no banco.
+
+## Melhorias futuras
+
+Adicionar paginação, autenticação e testes de integração. Levar o filtro de ano e a associação dos resultados de pessoas e veículos para a API.
