@@ -15,18 +15,6 @@ C#, ASP.NET Core 10, Entity Framework Core, SQL Server 2022, Angular 22, MediatR
 
 ## Configuração do banco
 
-O arquivo `AutoSales.Api/appsettings.Local.json` contém uma configuração simplificada de exemplo. Substitua servidor, usuário e senha pelos dados do seu ambiente:
-
-```json
-{
-  "ConnectionStrings": {
-    "Registry": "Server=SEU_SERVIDOR;Database=AutoSales;User Id=SEU_USUARIO;Password=SUA_SENHA;TrustServerCertificate=True"
-  }
-}
-```
-
-Esse arquivo é usado na execução em Debug e está ignorado pelo Git. Se não estiver presente após clonar, crie-o com a estrutura acima.
-
 ### SQL Server no Docker
 
 Se já possui um SQL Server, pode pular esta etapa. Na raiz da solução, execute no PowerShell:

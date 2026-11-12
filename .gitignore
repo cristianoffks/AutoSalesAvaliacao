@@ -3,4 +3,3 @@ obj/
 .vs/
 *.user
 .env
-AutoSales.Api/appsettings.Local.json
